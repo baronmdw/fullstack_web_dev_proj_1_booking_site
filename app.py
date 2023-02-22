@@ -15,6 +15,8 @@ from logging import Formatter, FileHandler
 from flask_wtf import Form
 from forms import *
 from markupsafe import Markup
+from flask_migrate import Migrate
+
 #----------------------------------------------------------------------------#
 # App Config.
 #----------------------------------------------------------------------------#
@@ -24,7 +26,8 @@ moment = Moment(app)
 app.config.from_object('config')
 db = SQLAlchemy(app)
 
-# TODO: connect to a local postgresql database
+# connect to a local postgresql database by setting up migration plan
+migrate = Migrate(app,db)
 
 #----------------------------------------------------------------------------#
 # Models.
