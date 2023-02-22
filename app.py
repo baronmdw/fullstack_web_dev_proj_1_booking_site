@@ -34,12 +34,22 @@ migrate = Migrate(app,db)
 # Models.
 #----------------------------------------------------------------------------#
 
-Show = db.Table('Show', 
-                db.Column('id', db.Integer, primary_key=True),
-                db.Column('artist_id', db.Integer, db.ForeignKey('Artist.id'), nullable=False),
-                db.Column('venue_id',db.Integer, db.ForeignKey('Venue.id'), nullable=False),
-                db.Column('detail_id', db.Integer(), db.ForeignKey('Showdetail.id'), nullable=True)
-)
+# Show = db.Table('Show', 
+#                 db.Column('id', db.Integer, primary_key=True),
+#                 db.Column('artist_id', db.Integer, db.ForeignKey('Artist.id'), nullable=False),
+#                 db.Column('venue_id',db.Integer, db.ForeignKey('Venue.id'), nullable=False),
+#                 db.Column('detail_id', db.Integer(), db.ForeignKey('Showdetail.id'), nullable=True)
+# )
+
+class Show(db.Model):
+   __tablename__ ='Show'
+
+   id = db.Column(db.Integer, primary_key=True)
+   artist_id = db.Column(db.Integer, db.ForeignKey('Artist.id'), nullable=False)
+   venue_id = db.Column(db.Integer, db.ForeignKey('Venue.id'),nullable=False)
+   start_time = db.Column(db.DateTime(), nullable=True)
+   artist = db.relationship('Artist', backref=db.backref('shows', lazy=True))
+   venue = db.relationship('Venue', backref=db.backref('shows', lazy=True))
 
 Genremap = db.Table('Genremap',
                     db.Column('id', db.Integer, primary_key=True),
@@ -47,12 +57,6 @@ Genremap = db.Table('Genremap',
                     db.Column('artist_id', db.Integer, db.ForeignKey('Artist.id'), nullable=True),
                     db.Column('genre_id', db.Integer, db.ForeignKey('Genre.id'), nullable=False)
                     )
-
-class Showdetail(db.Model):
-   __tablename__ = "Showdetail"
-
-   id = db.Column(db.Integer, primary_key=True)
-   start_time = db.Column(db.DateTime(), nullable=False)
 
 class Genre(db.Model):
    __tablename__ = "Genre"
@@ -74,9 +78,8 @@ class Venue(db.Model):
     website = db.Column(db.String(120))
     seeking_talent = db.Column(db.Boolean)
     seeking_description = db.Column(db.String(500))
-    artist = db.relationship('Artist', secondary=Show, backref=db.backref('venue', lazy=True))
-    genres = db.relationship('Genre', secondary=Genremap, backref=db.backref('venue', lazy=True))
-    shows = db.relationship('Showdetail', secondary=Show, backref=db.backref('venue', lazy=True))
+    artist = db.relationship('Artist', secondary='Show', backref=db.backref('venue', lazy=True))
+    genres = db.relationship('Genre', secondary='Genremap', backref=db.backref('venue', lazy=True))
 
 class Artist(db.Model):
     __tablename__ = 'Artist'
@@ -163,7 +166,11 @@ def search_venues():
 
 @app.route('/venues/<int:venue_id>')
 def show_venue(venue_id):
+
+  # TODO: Make sure, that datetime comes without space (or works)
+
   data = Venue.query.get(venue_id)
+
   return render_template('pages/show_venue.html', venue=data)
 
 #  Create Venue
