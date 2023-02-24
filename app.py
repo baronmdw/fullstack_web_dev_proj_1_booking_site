@@ -48,8 +48,8 @@ class Show(db.Model):
    artist_id = db.Column(db.Integer, db.ForeignKey('Artist.id'), nullable=False)
    venue_id = db.Column(db.Integer, db.ForeignKey('Venue.id'),nullable=False)
    start_time = db.Column(db.DateTime(), nullable=True)
-   artist = db.relationship('Artist', backref=db.backref('shows', lazy=True))
-   venue = db.relationship('Venue', backref=db.backref('shows', lazy=True))
+   artist = db.relationship('Artist', backref=db.backref('artist_shows', lazy=True))
+   venue = db.relationship('Venue', backref=db.backref('venue_shows', lazy=True))
 
 Genremap = db.Table('Genremap',
                     db.Column('id', db.Integer, primary_key=True),
@@ -80,6 +80,16 @@ class Venue(db.Model):
     seeking_description = db.Column(db.String(500))
     artist = db.relationship('Artist', secondary='Show', backref=db.backref('venue', lazy=True))
     genres = db.relationship('Genre', secondary='Genremap', backref=db.backref('venue', lazy=True))
+
+    def __init__(self):
+       self.upcoming_shows = None
+       self.upcoming_shows_count = 3
+       self.past_shows = None
+       self.past_shows_count = None
+       
+    def sort_shows(self):
+       self.upcoming_shows = [{'start_time': show.start_time.strftime("%Y/%m/%d, %H:%M:%S"), 'artist_id': show.artist_id, 'artist_image_link': show.artist.image_link, 'artist_name':show.artist.name} for show in self.venue_shows]
+       print(self)
 
 class Artist(db.Model):
     __tablename__ = 'Artist'
@@ -170,7 +180,8 @@ def show_venue(venue_id):
   # TODO: Make sure, that datetime comes without space (or works)
 
   data = Venue.query.get(venue_id)
-
+  data.sort_shows()
+  print(data)
   return render_template('pages/show_venue.html', venue=data)
 
 #  Create Venue
