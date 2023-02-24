@@ -34,13 +34,6 @@ migrate = Migrate(app,db)
 # Models.
 #----------------------------------------------------------------------------#
 
-# Show = db.Table('Show', 
-#                 db.Column('id', db.Integer, primary_key=True),
-#                 db.Column('artist_id', db.Integer, db.ForeignKey('Artist.id'), nullable=False),
-#                 db.Column('venue_id',db.Integer, db.ForeignKey('Venue.id'), nullable=False),
-#                 db.Column('detail_id', db.Integer(), db.ForeignKey('Showdetail.id'), nullable=True)
-# )
-
 class Show(db.Model):
    __tablename__ ='Show'
 
@@ -145,23 +138,20 @@ def venues():
 
 @app.route('/venues/search', methods=['POST'])
 def search_venues():
-  # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
+  # Done: implement search on artists with partial string search. Ensure it is case-insensitive.
   # seach for Hop should return "The Musical Hop".
   # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
+  search_term=request.form.get('search_term', '')
   response={
-    "count": 1,
-    "data": [{
-      "id": 2,
-      "name": "The Dueling Pianos Bar",
-      "num_upcoming_shows": 0,
-    }]
+    "count": Venue.query.filter(Venue.name.ilike('%'+search_term+'%')).count(),
+    "data": Venue.query.filter(Venue.name.ilike('%'+search_term+'%'))
   }
   return render_template('pages/search_venues.html', results=response, search_term=request.form.get('search_term', ''))
 
 @app.route('/venues/<int:venue_id>')
 def show_venue(venue_id):
 
-  # TODO: Make sure, that datetime comes without space (or works)
+  # Done: Make sure, that datetime comes without space (or works)
 
   data = Venue.query.get(venue_id)
   data.sort_shows()
