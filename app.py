@@ -50,7 +50,7 @@ class Show(db.Model):
       self.begin_time = self.start_time.strftime("%Y/%m/%d, %H:%M:%S")
    
    def set_time(self, inputDate):
-      self.start_time = inputDate
+      self.start_time = datetime.strptime(inputDate, "%Y-%m-%d %H:%M:%S")
 
 
 Genremap = db.Table('Genremap',
@@ -410,9 +410,8 @@ def create_show_submission():
     showItem = ShowForm(request.form)
     show.artist_id = showItem.artist_id
     show.venue_id = showItem.venue_id
-    # show.set_time(showItem['start_time'].data)
-    print(showItem['start_time'])
-    show.start_time = showItem['start_time'].data
+    print(str(request.form['start_time']))
+    show.start_time = datetime.strptime(str(request.form['start_time']),"%Y-%m-%d %H:%M:%S")
     db.session.add(show)
     db.session.commit()
   # on successful db insert, flash success
