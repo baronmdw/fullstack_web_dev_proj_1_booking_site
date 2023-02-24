@@ -48,6 +48,9 @@ class Show(db.Model):
    
    def set_timeFormat(self):
       self.begin_time = self.start_time.strftime("%Y/%m/%d, %H:%M:%S")
+   
+   def set_time(self, inputDate):
+      self.start_time = inputDate
 
 
 Genremap = db.Table('Genremap',
@@ -77,7 +80,7 @@ class Venue(db.Model):
     website = db.Column(db.String(120))
     seeking_talent = db.Column(db.Boolean)
     seeking_description = db.Column(db.String(500))
-    artist = db.relationship('Artist', secondary='Show', backref=db.backref('venue', lazy=True))
+    artist = db.relationship('Artist', secondary='Show', backref=db.backref('venue', lazy=True), overlaps="venue,venue_shows")
     genres = db.relationship('Genre', secondary='Genremap', backref=db.backref('venue', lazy=True))
        
     def sort_shows(self):
@@ -102,7 +105,7 @@ class Artist(db.Model):
     website = db.Column(db.String(120))
     seeking_venue = db.Column(db.Boolean)
     seeking_description = db.Column(db.String(500))
-    genres = db.relationship('Genre', secondary=Genremap, backref=db.backref('artist', lazy=True))
+    genres = db.relationship('Genre', secondary=Genremap, backref=db.backref('artist', lazy=True), overlaps="genres,venue")
     
     def sort_shows(self):
        self.upcoming_shows = [{'start_time': show.start_time.strftime("%Y/%m/%d, %H:%M:%S"), 'venue_id': show.venue_id, 'venue_image_link': show.venue.image_link, 'venue':show.venue.name} for show in self.artist_shows if show.start_time >= datetime.now()]
@@ -377,7 +380,6 @@ def create_artist_submission():
     flash('This didn\'t work out as planned, Artist ' + artistItem.name.data + 'could not be listed.')
   finally:
      db.session.close()
-  # e.g., flash('An error occurred. Artist ' + data.name + ' could not be listed.')
   return render_template('pages/home.html')
 
 
@@ -402,12 +404,27 @@ def create_shows():
 def create_show_submission():
   # called to create new shows in the db, upon submitting new show listing form
   # TODO: insert form data as a new Show record in the db, instead
-
+  show = Show()
+  error = False
+  try:
+    showItem = ShowForm(request.form)
+    show.artist_id = showItem.artist_id
+    show.venue_id = showItem.venue_id
+    # show.set_time(showItem['start_time'].data)
+    print(showItem['start_time'])
+    show.start_time = showItem['start_time'].data
+    db.session.add(show)
+    db.session.commit()
   # on successful db insert, flash success
-  flash('Show was successfully listed!')
-  # TODO: on unsuccessful db insert, flash an error instead.
-  # e.g., flash('An error occurred. Show could not be listed.')
-  # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
+    flash('Show was successfully listed!')
+  except:
+    db.session.rollback()
+    error=True
+    print(sys.exc_info())
+    flash('This didn\'t work out as planned, Show could not be listed.')
+  finally:
+     db.session.close()
+  # Done: on unsuccessful db insert, flash an error instead.
   return render_template('pages/home.html')
 
 @app.errorhandler(404)
