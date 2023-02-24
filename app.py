@@ -88,8 +88,11 @@ class Venue(db.Model):
        self.past_shows_count = None
        
     def sort_shows(self):
-       self.upcoming_shows = [{'start_time': show.start_time.strftime("%Y/%m/%d, %H:%M:%S"), 'artist_id': show.artist_id, 'artist_image_link': show.artist.image_link, 'artist_name':show.artist.name} for show in self.venue_shows]
-       print(self)
+       self.upcoming_shows = [{'start_time': show.start_time.strftime("%Y/%m/%d, %H:%M:%S"), 'artist_id': show.artist_id, 'artist_image_link': show.artist.image_link, 'artist_name':show.artist.name} for show in self.venue_shows if show.start_time >= datetime.now()]
+       self.upcoming_shows_count = len(self.upcoming_shows)
+       self.past_shows = [{'start_time': show.start_time.strftime("%Y/%m/%d, %H:%M:%S"), 'artist_id': show.artist_id, 'artist_image_link': show.artist.image_link, 'artist_name':show.artist.name} for show in self.venue_shows if show.start_time < datetime.now()]
+       self.past_shows_count = len(self.past_shows)
+       print(self)  
 
 class Artist(db.Model):
     __tablename__ = 'Artist'
