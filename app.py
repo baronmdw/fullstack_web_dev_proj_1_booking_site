@@ -82,6 +82,8 @@ class Venue(db.Model):
        self.past_shows = [{'start_time': show.start_time.strftime("%Y/%m/%d, %H:%M:%S"), 'artist_id': show.artist_id, 'artist_image_link': show.artist.image_link, 'artist_name':show.artist.name} for show in self.venue_shows if show.start_time < datetime.now()]
        self.past_shows_count = len(self.past_shows)
        
+    def extractBool(self, infoBool):
+       self.seeking_talent = infoBool
 
 class Artist(db.Model):
     __tablename__ = 'Artist'
@@ -172,7 +174,6 @@ def create_venue_submission():
   error = False
   try:
      venueItem = VenueForm(request.form)
-     print([venueItem['genres']])
      newVenue = Venue(name=venueItem.name.data,
                       city=venueItem.city.data,
                       state = venueItem.state.data,
@@ -279,28 +280,43 @@ def edit_artist_submission(artist_id):
 
 @app.route('/venues/<int:venue_id>/edit', methods=['GET'])
 def edit_venue(venue_id):
-  form = VenueForm()
-  venue={
-    "id": 1,
-    "name": "The Musical Hop",
-    "genres": ["Jazz", "Reggae", "Swing", "Classical", "Folk"],
-    "address": "1015 Folsom Street",
-    "city": "San Francisco",
-    "state": "CA",
-    "phone": "123-123-1234",
-    "website": "https://www.themusicalhop.com",
-    "facebook_link": "https://www.facebook.com/TheMusicalHop",
-    "seeking_talent": True,
-    "seeking_description": "We are on the lookout for a local artist to play every two weeks. Please call us.",
-    "image_link": "https://images.unsplash.com/photo-1543900694-133f37abaaa5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=400&q=60"
-  }
-  # TODO: populate form with values from venue with ID <venue_id>
+  venue= Venue.query.get(venue_id)
+  form = VenueForm(obj=venue)
+  form.genres.process_data(venue.genres)
+  form.seeking_talent.process_data(venue.seeking_talent)
+  # Done: populate form with values from venue with ID <venue_id>
   return render_template('forms/edit_venue.html', form=form, venue=venue)
 
 @app.route('/venues/<int:venue_id>/edit', methods=['POST'])
 def edit_venue_submission(venue_id):
-  # TODO: take values from the form submitted, and update existing
+  # Done: take values from the form submitted, and update existing
   # venue record with ID <venue_id> using the new attributes
+  venue = Venue.query.get(venue_id)
+  error = False
+  try:
+     venueItem = VenueForm(request.form)
+     venue.name=venueItem.name.data,
+     venue.city=venueItem.city.data,
+     venue.state = venueItem.state.data,
+     venue.address=venueItem.address.data,
+     venue.phone=venueItem.phone.data,
+     venue.image_link=venueItem.image_link.data,
+     venue.facebook_link=venueItem.facebook_link.data,
+     venue.website=venueItem.website_link.data,
+     venue.extractBool(venueItem.seeking_talent.data),
+     venue.seeking_description=venueItem.seeking_description.data,
+     venue.genres=[Genre(name=genreItem) for genreItem in venueItem.genres.data]
+     db.session.commit()
+  # on successful db insert, flash success
+     flash('Venue ' + venueItem.name.data + ' was successfully edited!')
+  # Done: on unsuccessful db insert, flash an error instead.
+  except:
+     db.session.rollback()
+     error = True       
+     print(sys.exc_info())
+     flash('This didn\'t work out as planned, Venue ' + str(venueItem.name.data) + 'could not be edited.')
+  finally:
+     db.session.close()
   return redirect(url_for('show_venue', venue_id=venue_id))
 
 #  Create Artist
@@ -418,7 +434,6 @@ def get_venues_per_city(inputData):
        appendData['venues'] = [{'id': row.id, 'name': row.name}]
   outputData.append(appendData.copy())
   return outputData
-
 
 if not app.debug:
     file_handler = FileHandler('error.log')
