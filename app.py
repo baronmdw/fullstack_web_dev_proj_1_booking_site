@@ -92,7 +92,8 @@ class Venue(db.Model):
        self.upcoming_shows_count = len(self.upcoming_shows)
        self.past_shows = [{'start_time': show.start_time.strftime("%Y/%m/%d, %H:%M:%S"), 'artist_id': show.artist_id, 'artist_image_link': show.artist.image_link, 'artist_name':show.artist.name} for show in self.venue_shows if show.start_time < datetime.now()]
        self.past_shows_count = len(self.past_shows)
-       print(self)  
+       
+
 
 class Artist(db.Model):
     __tablename__ = 'Artist'
@@ -137,32 +138,10 @@ def index():
 
 @app.route('/venues')
 def venues():
-  # TODO: replace with real venues data.
-  #       num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
-  data=[{
-    "city": "San Francisco",
-    "state": "CA",
-    "venues": [{
-      "id": 1,
-      "name": "The Musical Hop",
-      "num_upcoming_shows": 0,
-    }, {
-      "id": 3,
-      "name": "Park Square Live Music & Coffee",
-      "num_upcoming_shows": 1,
-    }]
-  }, {
-    "city": "New York",
-    "state": "NY",
-    "venues": [{
-      "id": 2,
-      "name": "The Dueling Pianos Bar",
-      "num_upcoming_shows": 0,
-    }]
-  }]
-  # data = Venue.query.all()
-  # data.sort_shows()
-  return render_template('pages/venues.html', areas=data)
+  # Done: replace with real venues data.
+  data_in = Venue.query.with_entities(Venue.city, Venue.state, Venue.name, Venue.id).group_by(Venue.city, Venue.state, Venue.id).all()
+  data_out = get_venues_per_city(data_in)
+  return render_template('pages/venues.html', areas=data_out)
 
 @app.route('/venues/search', methods=['POST'])
 def search_venues():
@@ -464,6 +443,30 @@ def not_found_error(error):
 @app.errorhandler(500)
 def server_error(error):
     return render_template('errors/500.html'), 500
+
+def get_venues_per_city(inputData):
+  outputData = []
+  currentCity = ""
+  currentState = ""
+  appendData = {'city': "", 'state': "", 'venues': []}
+  for row in inputData:
+    if row.city == currentCity and row.state == currentState:
+       appendData['venues'].append({'id': row.id, 'name': row.name})
+    elif currentCity != "" and currentState != "":
+       outputData.append(appendData.copy())
+       currentCity = row.city
+       currentState = row.state
+       appendData['city'] = row.city
+       appendData['state'] = row.state
+       appendData['venues'] = [{'id': row.id, 'name': row.name}]
+    else:
+       currentCity = row.city
+       currentState = row.state
+       appendData['city'] = row.city
+       appendData['state'] = row.state
+       appendData['venues'] = [{'id': row.id, 'name': row.name}]
+  outputData.append(appendData.copy())
+  return outputData
 
 
 if not app.debug:
