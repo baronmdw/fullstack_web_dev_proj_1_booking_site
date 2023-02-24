@@ -105,6 +105,9 @@ class Artist(db.Model):
        self.upcoming_shows_count = len(self.upcoming_shows)
        self.past_shows = [{'start_time': show.start_time.strftime("%Y/%m/%d, %H:%M:%S"), 'venue_id': show.venue_id, 'venue_image_link': show.venue.image_link, 'venue_name':show.venue.name} for show in self.artist_shows if show.start_time < datetime.now()]
        self.past_shows_count = len(self.past_shows)
+    
+    def extractBool(self, infoBool):
+       self.seeking_venue = infoBool
 
 #----------------------------------------------------------------------------#
 # Filters.
@@ -254,28 +257,40 @@ def show_artist(artist_id):
 #  ----------------------------------------------------------------
 @app.route('/artists/<int:artist_id>/edit', methods=['GET'])
 def edit_artist(artist_id):
-  form = ArtistForm()
-  artist={
-    "id": 4,
-    "name": "Guns N Petals",
-    "genres": ["Rock n Roll"],
-    "city": "San Francisco",
-    "state": "CA",
-    "phone": "326-123-5000",
-    "website": "https://www.gunsnpetalsband.com",
-    "facebook_link": "https://www.facebook.com/GunsNPetals",
-    "seeking_venue": True,
-    "seeking_description": "Looking for shows to perform at in the San Francisco Bay Area!",
-    "image_link": "https://images.unsplash.com/photo-1549213783-8284d0336c4f?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=300&q=80"
-  }
-  # TODO: populate form with fields from artist with ID <artist_id>
+  artist = Artist.query.get(artist_id)
+  form = ArtistForm(obj=artist)
+  # Done: populate form with fields from artist with ID <artist_id>
   return render_template('forms/edit_artist.html', form=form, artist=artist)
 
 @app.route('/artists/<int:artist_id>/edit', methods=['POST'])
 def edit_artist_submission(artist_id):
-  # TODO: take values from the form submitted, and update existing
+  # Done: take values from the form submitted, and update existing
   # artist record with ID <artist_id> using the new attributes
-
+  artist = Artist.query.get(artist_id)
+  error = False
+  try:
+     artistItem = ArtistForm(request.form)
+     artist.name=artistItem.name.data,
+     artist.city=artistItem.city.data,
+     artist.state = artistItem.state.data,
+     artist.phone=artistItem.phone.data,
+     artist.image_link=artistItem.image_link.data,
+     artist.facebook_link=artistItem.facebook_link.data,
+     artist.website=artistItem.website_link.data,
+     artist.extractBool(artistItem.seeking_venue.data),
+     artist.seeking_description=artistItem.seeking_description.data,
+     artist.genres=[Genre(name=genreItem) for genreItem in artistItem.genres.data]
+     db.session.commit()
+  # on successful db insert, flash success
+     flash('Artist ' + artistItem.name.data + ' was successfully edited!')
+  # Done: on unsuccessful db insert, flash an error instead.
+  except:
+     db.session.rollback()
+     error = True       
+     print(sys.exc_info())
+     flash('This didn\'t work out as planned, Artist ' + artistItem.name.data + 'could not be edited.')
+  finally:
+     db.session.close()
   return redirect(url_for('show_artist', artist_id=artist_id))
 
 @app.route('/venues/<int:venue_id>/edit', methods=['GET'])
