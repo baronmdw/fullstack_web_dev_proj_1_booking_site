@@ -17,6 +17,8 @@ from forms import *
 from markupsafe import Markup
 from flask_migrate import Migrate
 from datetime import datetime
+import sys
+from sqlalchemy import func 
 
 #----------------------------------------------------------------------------#
 # App Config.
@@ -61,7 +63,7 @@ class Venue(db.Model):
     __tablename__ = 'Venue'
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
+    name = db.Column(db.String(150))
     city = db.Column(db.String(120))
     state = db.Column(db.String(120))
     address = db.Column(db.String(120))
@@ -73,12 +75,6 @@ class Venue(db.Model):
     seeking_description = db.Column(db.String(500))
     artist = db.relationship('Artist', secondary='Show', backref=db.backref('venue', lazy=True))
     genres = db.relationship('Genre', secondary='Genremap', backref=db.backref('venue', lazy=True))
-
-    def __init__(self):
-       self.upcoming_shows = None
-       self.upcoming_shows_count = 3
-       self.past_shows = None
-       self.past_shows_count = None
        
     def sort_shows(self):
        self.upcoming_shows = [{'start_time': show.start_time.strftime("%Y/%m/%d, %H:%M:%S"), 'artist_id': show.artist_id, 'artist_image_link': show.artist.image_link, 'artist_name':show.artist.name} for show in self.venue_shows if show.start_time >= datetime.now()]
@@ -87,12 +83,11 @@ class Venue(db.Model):
        self.past_shows_count = len(self.past_shows)
        
 
-
 class Artist(db.Model):
     __tablename__ = 'Artist'
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
+    name = db.Column(db.String(150))
     city = db.Column(db.String(120))
     state = db.Column(db.String(120))
     phone = db.Column(db.String(120))
@@ -155,7 +150,6 @@ def show_venue(venue_id):
 
   data = Venue.query.get(venue_id)
   data.sort_shows()
-  print(data)
   return render_template('pages/show_venue.html', venue=data)
 
 #  Create Venue
@@ -168,12 +162,36 @@ def create_venue_form():
 
 @app.route('/venues/create', methods=['POST'])
 def create_venue_submission():
-  # TODO: insert form data as a new Venue record in the db, instead
-  # TODO: modify data to be the data object returned from db insertion
-
+  # Done: insert form data as a new Venue record in the db, instead
+  # Done: modify data to be the data object returned from db insertion
+  error = False
+  try:
+     venueItem = VenueForm(request.form)
+     print([venueItem['genres']])
+     newVenue = Venue(name=venueItem.name.data,
+                      city=venueItem.city.data,
+                      state = venueItem.state.data,
+                      address=venueItem.address.data,
+                      phone=venueItem.phone.data,
+                      image_link=venueItem.image_link.data,
+                      facebook_link=venueItem.facebook_link.data,
+                      website=venueItem.website_link.data,
+                      seeking_talent=venueItem.seeking_talent.data,
+                      seeking_description=venueItem.seeking_description.data,
+                      genres=[Genre(name=genreItem) for genreItem in venueItem.genres.data],
+     )
+     db.session.add(newVenue)
+     db.session.commit()
   # on successful db insert, flash success
-  flash('Venue ' + request.form['name'] + ' was successfully listed!')
+     flash('Venue ' + str(venueItem.name.data) + ' was successfully listed!')
   # TODO: on unsuccessful db insert, flash an error instead.
+  except:
+     db.session.rollback()
+     error = True       
+     print(sys.exc_info())
+     flash('This didn\'t work out as planned, Venue ' + str(venueItem.name.data) + 'could not be listed.')
+  finally:
+     db.session.close()
   # e.g., flash('An error occurred. Venue ' + data.name + ' could not be listed.')
   # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
   return render_template('pages/home.html')
