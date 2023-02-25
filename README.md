@@ -38,6 +38,10 @@ npm install bootstrap@3
 ```
 as indicated in the udacity settings should do just fine.
 
+## Flask Migration
+
+Update your database according to the provided migrations, DB could be populated "by hand" with SQL commands in psql or by adding artists and venues via the webforms.
+
 Hope you enjoy the review =)
 
 # Original Readme
