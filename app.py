@@ -42,7 +42,7 @@ class Show(db.Model):
    id = db.Column(db.Integer, primary_key=True)
    artist_id = db.Column(db.Integer, db.ForeignKey('Artist.id'), nullable=False)
    venue_id = db.Column(db.Integer, db.ForeignKey('Venue.id'),nullable=False)
-   start_time = db.Column(db.DateTime(), nullable=True)
+   start_time = db.Column(db.DateTime(timezone=False), nullable=True)
    artist = db.relationship('Artist', backref=db.backref('artist_shows', lazy=True))
    venue = db.relationship('Venue', backref=db.backref('venue_shows', lazy=True))
    
@@ -228,7 +228,7 @@ def delete_venue(venue_id):
   if error:
      return (400)
   else:
-  # BONUS CHALLENGE Done: Implement a button to delete a Venue on a Venue Page, have it so that
+  # BONUS CHALLENGE DONE: Implement a button to delete a Venue on a Venue Page, have it so that
   # clicking that button delete it from the db then redirect the user to the homepage
     return (200)
 
@@ -403,15 +403,20 @@ def create_shows():
 @app.route('/shows/create', methods=['POST'])
 def create_show_submission():
   # called to create new shows in the db, upon submitting new show listing form
-  # TODO: insert form data as a new Show record in the db, instead
+  # Done: insert form data as a new Show record in the db, instead
   show = Show()
   error = False
+  print(request.get_json())
   try:
-    showItem = ShowForm(request.form)
-    show.artist_id = showItem.artist_id
-    show.venue_id = showItem.venue_id
-    print(str(request.form['start_time']))
-    show.start_time = datetime.strptime(str(request.form['start_time']),"%Y-%m-%d %H:%M:%S")
+    showItem = request.get_json()
+    show.artist_id = showItem['artist_id']
+    show.venue_id = showItem['venue_id']
+    inputDate = showItem['start_time']
+    if isinstance(inputDate, str):
+       show.start_time = datetime.fromisoformat(inputDate)
+    else:
+       print('in else path')
+       show.start_time = inputDate
     db.session.add(show)
     db.session.commit()
   # on successful db insert, flash success
@@ -435,6 +440,7 @@ def server_error(error):
     return render_template('errors/500.html'), 500
 
 def get_venues_per_city(inputData):
+  # This function handles the creation of the returnobject for the venues page by ordering the venues per city
   outputData = []
   currentCity = ""
   currentState = ""
