@@ -1,5 +1,46 @@
 Fyyur
 -----
+# Instructions for reviewer
+
+## Setup of database
+
+For Review please make sure to create a postgres database called fyyurapp that is callable on your localhost port 5432.
+Due to private keys included I didn't upload the config file to github, so please make sure to create config.py file in your project root with following content:
+
+```
+import os
+SECRET_KEY = os.urandom(32)
+# Grabs the folder where the script runs.
+basedir = os.path.abspath(os.path.dirname(__file__))
+
+# Enable debug mode.
+DEBUG = True
+
+# Connect to the database
+
+
+# TODO IMPLEMENT DATABASE URL
+SQLALCHEMY_DATABASE_URI = 'postgresql://<user>:<password>@localhost:5432/fyyurapp'
+```
+## Python env
+
+Setup your python venv as described down in the project instructions provided by udacity.
+I updated the requirements file with flask freeze so please make sure to run
+```
+pip install -r "requirements.txt"
+```
+to make sure that the correct versions of the included packages are involved, I used python version 3.11.1 on my local machine so please make sure to do so as well.
+
+There have been no changes in the frontend dependencies so 
+```
+npm init -y
+npm install bootstrap@3
+```
+as indicated in the udacity settings should do just fine.
+
+Hope you enjoy the review =)
+
+# Original Readme
 
 ## Introduction
 
